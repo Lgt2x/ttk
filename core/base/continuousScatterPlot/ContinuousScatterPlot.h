@@ -23,6 +23,7 @@
 #include <limits>
 
 // base code includes
+#include <Debug.h>
 #include <Geometry.h>
 #include <Triangulation.h>
 
@@ -139,6 +140,7 @@ int ttk::ContinuousScatterPlot::execute(
 #pragma omp parallel for num_threads(threadNumber_) firstprivate(triangles)
 #endif
   for(SimplexId cell = 0; cell < numberOfCells; ++cell) {
+    // std::cout << "\n\nNew Cell : " << cell << std::endl;
     bool isDummy{};
 
     // get tetrahedron info
@@ -191,7 +193,7 @@ int ttk::ContinuousScatterPlot::execute(
       double s12[3];
       double s13[3];
       double s14[3];
-      for(int k = 0; k < 3; ++k) {
+      for(int k = 0; k < 3; ++k) { // Iterate over x,y,z
         v12[k] = position[1][k] - position[0][k];
         v13[k] = position[2][k] - position[0][k];
         v14[k] = position[3][k] - position[0][k];
@@ -208,6 +210,12 @@ int ttk::ContinuousScatterPlot::execute(
       Geometry::crossProduct(v12, v14, b);
       Geometry::crossProduct(v14, v13, c);
       double det = Geometry::dotProduct(v14, a);
+
+      // std::cout << "a= " << a[0] << "," << a[1] << "," << a[2] << std::endl;
+      // std::cout << "b= " << b[0] << "," << b[1] << "," << b[2] << std::endl;
+      // std::cout << "c= " << c[0] << "," << c[1] << "," << c[2] << std::endl;
+      // std::cout << "det=" << det << std::endl;
+
       if(det == 0.) {
         for(int k = 0; k < 3; ++k) {
           g0[k] = 0.0;
@@ -220,7 +228,17 @@ int ttk::ContinuousScatterPlot::execute(
           g1[k] = (s14[1] * a[k] + s13[1] * b[k] + s12[1] * c[k]) * invDet;
         }
       }
+
+      // std::cout << "g0= " << g0[0] << "," << g0[1] << "," << g0[2] <<
+      // std::endl; std::cout << "g1= " << g1[0] << "," << g1[1] << "," << g1[2]
+      // << std::endl;
     }
+
+    // printWrn("Data ??");
+    // for(int i = 0; i < 4; i++) {
+    //   // std::cout << data[i][0] << " " << data[i][1] << " " << data[i][2]
+    //             << std::endl;
+    // }
 
     // volume:
     double volume;
@@ -232,6 +250,8 @@ int ttk::ContinuousScatterPlot::execute(
       if(volume == 0.)
         isLimit = true;
     }
+
+    // std::cout << "volume=" << volume << std::endl;
 
     // classification:
     int index[4]{0, 1, 2, 3};
@@ -293,6 +313,10 @@ int ttk::ContinuousScatterPlot::execute(
         beta *= invA;
         gamma *= invA;
 
+        // std::cout << "alpha=" << alpha << std::endl;
+        // std::cout << "beta=" << beta << std::endl;
+        // std::cout << "gamma=" << gamma << std::endl;
+
         double p0[3];
         double p1[3];
         for(int k = 0; k < 3; ++k) {
@@ -301,13 +325,22 @@ int ttk::ContinuousScatterPlot::execute(
           p1[k] = alpha * position[index[0]][k] + beta * position[index[1]][k]
                   + gamma * position[index[2]][k];
         }
+
+        // std::cout << "p0= " << p0[0] << "," << p0[1] << "," << p0[2]
+        // << std::endl;
+        // std::cout << "p1= " << p1[0] << "," << p1[1] << "," << p1[2]
+        // << std::endl;
+
         massDensity = Geometry::distance(p0, p1);
+        // std::cout << "massdensity=" << massDensity << std::endl;
       }
 
       if(isLimit)
         density = std::numeric_limits<decltype(density)>::max();
       else
         density = massDensity / volume;
+
+      // std::cout << "Density=" << density << std::endl;
 
       triangle[0] = vertex[index[3]];
       triangle[1] = vertex[index[0]];
@@ -351,13 +384,30 @@ int ttk::ContinuousScatterPlot::execute(
         index[3] = 2;
       }
 
+      // std::cout << "imaginary =" << p[0] << " " << p[1] << std::endl;
+
       double a = Geometry::distance(data[index[0]], p);
       double b = Geometry::distance(data[index[0]], data[index[1]]);
       double r0 = a / b;
 
+      // std::cout << "data index 0" << data[index[0]][0] << " " <<
+      // data[index[0]][1] << std::endl; std::cout << "data index 1" <<
+      // data[index[1]][0] << " " << data[index[1]][1] << std::endl; std::cout
+      // << "data index 2" << data[index[2]][0] << " " << data[index[2]][1] <<
+      // std::endl; std::cout << "data index 3" << data[index[3]][0] << " " <<
+      // data[index[3]][1] << std::endl;
+
+      // std::cout << "distance1=" << a << std::endl;
+      // std::cout << "distance2=" << b << std::endl;
+      // std::cout << "r0=" << r0 << std::endl;
+
       a = Geometry::distance(data[index[2]], p);
       b = Geometry::distance(data[index[2]], data[index[3]]);
       double r1 = a / b;
+
+      // std::cout << "distance3=" << a << std::endl;
+      // std::cout << "distance4=" << b << std::endl;
+      // std::cout << "r1=" << r1 << std::endl;
 
       double p0[3];
       double p1[3];
@@ -369,12 +419,20 @@ int ttk::ContinuousScatterPlot::execute(
         p1[k] = position[index[2]][k]
                 + r1 * (position[index[3]][k] - position[index[2]][k]);
       }
+
+      // std::cout << "p0= " << p0[0] << "," << p0[1] << "," << p0[2] <<
+      // std::endl; std::cout << "p1= " << p1[0] << "," << p1[1] << "," << p1[2]
+      // << std::endl;
+
       massDensity = Geometry::distance(p0, p1);
+      // std::cout << "massdensity=" << massDensity << std::endl;
 
       if(isLimit)
         density = std::numeric_limits<decltype(density)>::max();
       else
         density = massDensity / volume;
+
+      // std::cout << "density=" << density << std::endl;
 
       imaginaryPosition[0] = p[0];
       imaginaryPosition[1] = p[1];
@@ -399,96 +457,15 @@ int ttk::ContinuousScatterPlot::execute(
       triangles.push_back(triangle);
     }
 
-    // rendering:
-    // "Fast, Minimum Storage Ray/Triangle Intersection", Tomas Moller & Ben
-    // Trumbore
-    {
-      const SimplexId minI
-        = floor((localScalarMin[0] - scalarMin_[0]) / sampling[0]);
-      const SimplexId minJ
-        = floor((localScalarMin[1] - scalarMin_[1]) / sampling[1]);
-      const SimplexId maxI
-        = ceil((localScalarMax[0] - scalarMin_[0]) / sampling[0]);
-      const SimplexId maxJ
-        = ceil((localScalarMax[1] - scalarMin_[1]) / sampling[1]);
+    // Skip rendering for this benchmark
 
-      for(SimplexId i = minI; i < maxI; ++i) {
-        for(SimplexId j = minJ; j < maxJ; ++j) {
-          // set ray origin
-          const double o[3]{scalarMin_[0] + i * sampling[0],
-                            scalarMin_[1] + j * sampling[1], 1};
-          for(unsigned int k = 0; k < triangles.size(); ++k) {
-            const auto &tr = triangles[k];
-
-            // get triangle info
-            double p0[3];
-            if(isInTriangle) {
-              p0[0] = scalars1[tr[0]];
-              p0[1] = scalars2[tr[0]];
-            } else {
-              p0[0] = imaginaryPosition[0];
-              p0[1] = imaginaryPosition[1];
-            }
-            p0[2] = 0;
-
-            const double p1[3]{
-              (double)scalars1[tr[1]], (double)scalars2[tr[1]], 0};
-            const double p2[3]{
-              (double)scalars1[tr[2]], (double)scalars2[tr[2]], 0};
-            const double e1[3]{p1[0] - p0[0], p1[1] - p0[1], 0};
-            const double e2[3]{p2[0] - p0[0], p2[1] - p0[1], 0};
-
-            double q[3];
-            Geometry::crossProduct(d, e2, q);
-            const double a = Geometry::dotProduct(e1, q);
-            if(a > -epsilon and a < epsilon)
-              continue;
-
-            const double f = 1.0 / a;
-            const double s[3]{o[0] - p0[0], o[1] - p0[1], 1};
-            const double u = f * Geometry::dotProduct(s, q);
-            if(u < 0.0)
-              continue;
-
-            double r[3];
-            Geometry::crossProduct(s, e1, r);
-            const double v = f * Geometry::dotProduct(d, r);
-            if(v < 0.0 or (u + v) > 1.0)
-              continue;
-
-              // triangle/ray intersection below
-#ifdef TTK_ENABLE_OPENMP
-#ifdef _WIN32
-#pragma omp atomic
-#else
-#pragma omp atomic update
-#endif
-#endif
-            (*density_)[i][j] += (1.0 - u - v) * density;
-
-#ifdef TTK_ENABLE_OPENMP
-#ifdef _WIN32
-#pragma omp atomic
-            (*validPointMask_)[i][j] += 1;
-#else
-#pragma omp atomic write
-            (*validPointMask_)[i][j] = 1;
-#endif
-#else
-            (*validPointMask_)[i][j] = 1;
-#endif
-            break;
-          }
-        }
-      }
-    }
   }
 
   {
     std::stringstream msg;
     msg << "Processed " << numberOfCells << " tetrahedra";
-    this->printMsg(msg.str(), 1, t.getElapsedTime(), threadNumber_);
+    this->printMsg(msg.str(), 1, t.getElapsedTime(), threadNumber_, -1.0,
+                   debug::LineMode::NEW, debug::Priority::ERROR); // Always display the timing message
   }
-
   return 0;
 }
