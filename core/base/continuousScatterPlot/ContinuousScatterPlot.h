@@ -236,31 +236,37 @@ int ttk::ContinuousScatterPlot::execute(
     // classification:
     int index[4]{0, 1, 2, 3};
     bool isInTriangle{};
-    if(Geometry::isPointInTriangle(data[0], data[1], data[2], data[3]))
+
+    bool zCrossProductsSigns[4] = {
+      (data[1][0] - data[0][0]) * (data[2][1] - data[0][1]) - (data[1][1] - data[0][1]) * (data[2][0] - data[0][0]) > 0,
+      (data[2][0] - data[1][0]) * (data[3][1] - data[1][1]) - (data[2][1] - data[1][1]) * (data[3][0] - data[1][0]) > 0,
+      (data[3][0] - data[2][0]) * (data[0][1] - data[2][1]) - (data[3][1] - data[2][1]) * (data[0][0] - data[2][0]) > 0,
+      (data[0][0] - data[3][0]) * (data[1][1] - data[3][1]) - (data[0][1] - data[3][1]) * (data[1][0] - data[3][0]) > 0
+    };
+
+    if ((zCrossProductsSigns[0] != zCrossProductsSigns[1]) != (zCrossProductsSigns[2] != zCrossProductsSigns[3])) {
       isInTriangle = true;
-    else if(Geometry::isPointInTriangle(data[0], data[1], data[3], data[2])) {
-      isInTriangle = true;
-      index[0] = 0;
-      index[1] = 1;
-      index[2] = 3;
-      index[3] = 2;
-    } else if(Geometry::isPointInTriangle(data[0], data[2], data[3], data[1])) {
-      isInTriangle = true;
-      index[0] = 0;
-      index[1] = 2;
-      index[2] = 3;
-      index[3] = 1;
-    } else if(Geometry::isPointInTriangle(data[1], data[2], data[3], data[0])) {
-      isInTriangle = true;
-      index[0] = 1;
-      index[1] = 2;
-      index[2] = 3;
-      index[3] = 0;
+      if (zCrossProductsSigns[1] == zCrossProductsSigns[2] && zCrossProductsSigns[2] == zCrossProductsSigns[3]) {
+        index[0] = 0;
+        index[1] = 2;
+        index[2] = 3;
+        index[3] = 1;
+      } else if (zCrossProductsSigns[0] == zCrossProductsSigns[2] && zCrossProductsSigns[2] == zCrossProductsSigns[3]) {
+        index[0] = 0;
+        index[1] = 1;
+        index[2] = 3;
+        index[3] = 2;
+      } else if (zCrossProductsSigns[0] == zCrossProductsSigns[1] && zCrossProductsSigns[1] == zCrossProductsSigns[2]) {
+        index[0] = 1;
+        index[1] = 2;
+        index[2] = 3;
+        index[3] = 0;
+      }
     }
 
     // projection:
     double density{};
-    double imaginaryPosition[3]{};
+    double imaginaryPosition[3]{0,0,0};
     triangles.clear();
     std::array<SimplexId, 3> triangle{};
     // class 0
@@ -272,14 +278,15 @@ int ttk::ContinuousScatterPlot::execute(
 
         Geometry::computeTriangleArea(
           data[index[0]], data[index[1]], data[index[2]], A);
-        double invA = 1.0 / A;
+        
+        double invA;
         if(A == 0.) {
           invA = 0.0;
           isLimit = true;
         }
+         invA = 1.0 / A;
 
         double alpha, beta, gamma;
-
         Geometry::computeTriangleArea(
           data[index[1]], data[index[2]], data[index[3]], alpha);
 
@@ -327,35 +334,38 @@ int ttk::ContinuousScatterPlot::execute(
     // class 1
     else {
       double massDensity{};
-      double p[3]{0, 0, 0};
-      if(Geometry::computeSegmentIntersection(
-           data[0][0], data[0][1], data[1][0], data[1][1], data[2][0],
-           data[2][1], data[3][0], data[3][1], p[0], p[1])) {
-        index[0] = 0;
-        index[1] = 1;
-        index[2] = 2;
-        index[3] = 3;
-      } else if(Geometry::computeSegmentIntersection(
-                  data[0][0], data[0][1], data[2][0], data[2][1], data[1][0],
-                  data[1][1], data[3][0], data[3][1], p[0], p[1])) {
-        index[0] = 0;
-        index[1] = 2;
-        index[2] = 1;
-        index[3] = 3;
-      } else if(Geometry::computeSegmentIntersection(
-                  data[0][0], data[0][1], data[3][0], data[3][1], data[1][0],
-                  data[1][1], data[2][0], data[2][1], p[0], p[1])) {
+
+      if (zCrossProductsSigns[0] != zCrossProductsSigns[1]) {
         index[0] = 0;
         index[1] = 3;
         index[2] = 1;
         index[3] = 2;
+        Geometry::computeSegmentIntersection(
+           data[0][0], data[0][1], data[1][0], data[1][1], data[2][0],
+           data[2][1], data[3][0], data[3][1], imaginaryPosition[0], imaginaryPosition[1]);
+      } else if (zCrossProductsSigns[2] != zCrossProductsSigns[1]) {
+        index[0] = 0;
+        index[1] = 1;
+        index[2] = 2;
+        index[3] = 3;
+        Geometry::computeSegmentIntersection(
+           data[0][0], data[0][1], data[1][0], data[1][1], data[2][0],
+           data[2][1], data[3][0], data[3][1], imaginaryPosition[0], imaginaryPosition[1]);
+      } else {
+        index[0] = 0;
+        index[1] = 2;
+        index[2] = 1;
+        index[3] = 3;
+        Geometry::computeSegmentIntersection(
+                  data[0][0], data[0][1], data[2][0], data[2][1], data[1][0],
+                  data[1][1], data[3][0], data[3][1], imaginaryPosition[0], imaginaryPosition[1]);
       }
 
-      double a = Geometry::distance(data[index[0]], p);
+      double a = Geometry::distance(data[index[0]], imaginaryPosition);
       double b = Geometry::distance(data[index[0]], data[index[1]]);
       double r0 = a / b;
 
-      a = Geometry::distance(data[index[2]], p);
+      a = Geometry::distance(data[index[2]], imaginaryPosition);
       b = Geometry::distance(data[index[2]], data[index[3]]);
       double r1 = a / b;
 
@@ -375,10 +385,6 @@ int ttk::ContinuousScatterPlot::execute(
         density = std::numeric_limits<decltype(density)>::max();
       else
         density = massDensity / volume;
-
-      imaginaryPosition[0] = p[0];
-      imaginaryPosition[1] = p[1];
-      imaginaryPosition[2] = 0;
 
       // four triangles projection
       triangle[0] = -1; // new geometry
@@ -487,7 +493,9 @@ int ttk::ContinuousScatterPlot::execute(
   {
     std::stringstream msg;
     msg << "Processed " << numberOfCells << " tetrahedra";
-    this->printMsg(msg.str(), 1, t.getElapsedTime(), threadNumber_);
+    this->printMsg(msg.str(), 1, t.getElapsedTime(), threadNumber_, -1.0,
+                   debug::LineMode::NEW,
+                   debug::Priority::ERROR); // Always display the timing message
   }
 
   return 0;
