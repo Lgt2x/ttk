@@ -487,7 +487,8 @@ int ttk::ContinuousScatterPlot::execute(
   {
     std::stringstream msg;
     msg << "Processed " << numberOfCells << " tetrahedra";
-    this->printMsg(msg.str(), 1, t.getElapsedTime(), threadNumber_);
+    this->printMsg(msg.str(), 1, t.getElapsedTime(), threadNumber_, -1.0,
+                   debug::LineMode::NEW, debug::Priority::ERROR); // Always display the timing message
   }
 
   return 0;
