@@ -402,86 +402,86 @@ int ttk::ContinuousScatterPlot::execute(
     // rendering:
     // "Fast, Minimum Storage Ray/Triangle Intersection", Tomas Moller & Ben
     // Trumbore
-    {
-      const SimplexId minI
-        = floor((localScalarMin[0] - scalarMin_[0]) / sampling[0]);
-      const SimplexId minJ
-        = floor((localScalarMin[1] - scalarMin_[1]) / sampling[1]);
-      const SimplexId maxI
-        = ceil((localScalarMax[0] - scalarMin_[0]) / sampling[0]);
-      const SimplexId maxJ
-        = ceil((localScalarMax[1] - scalarMin_[1]) / sampling[1]);
+//     {
+//       const SimplexId minI
+//         = floor((localScalarMin[0] - scalarMin_[0]) / sampling[0]);
+//       const SimplexId minJ
+//         = floor((localScalarMin[1] - scalarMin_[1]) / sampling[1]);
+//       const SimplexId maxI
+//         = ceil((localScalarMax[0] - scalarMin_[0]) / sampling[0]);
+//       const SimplexId maxJ
+//         = ceil((localScalarMax[1] - scalarMin_[1]) / sampling[1]);
 
-      for(SimplexId i = minI; i < maxI; ++i) {
-        for(SimplexId j = minJ; j < maxJ; ++j) {
-          // set ray origin
-          const double o[3]{scalarMin_[0] + i * sampling[0],
-                            scalarMin_[1] + j * sampling[1], 1};
-          for(unsigned int k = 0; k < triangles.size(); ++k) {
-            const auto &tr = triangles[k];
+//       for(SimplexId i = minI; i < maxI; ++i) {
+//         for(SimplexId j = minJ; j < maxJ; ++j) {
+//           // set ray origin
+//           const double o[3]{scalarMin_[0] + i * sampling[0],
+//                             scalarMin_[1] + j * sampling[1], 1};
+//           for(unsigned int k = 0; k < triangles.size(); ++k) {
+//             const auto &tr = triangles[k];
 
-            // get triangle info
-            double p0[3];
-            if(isInTriangle) {
-              p0[0] = scalars1[tr[0]];
-              p0[1] = scalars2[tr[0]];
-            } else {
-              p0[0] = imaginaryPosition[0];
-              p0[1] = imaginaryPosition[1];
-            }
-            p0[2] = 0;
+//             // get triangle info
+//             double p0[3];
+//             if(isInTriangle) {
+//               p0[0] = scalars1[tr[0]];
+//               p0[1] = scalars2[tr[0]];
+//             } else {
+//               p0[0] = imaginaryPosition[0];
+//               p0[1] = imaginaryPosition[1];
+//             }
+//             p0[2] = 0;
 
-            const double p1[3]{
-              (double)scalars1[tr[1]], (double)scalars2[tr[1]], 0};
-            const double p2[3]{
-              (double)scalars1[tr[2]], (double)scalars2[tr[2]], 0};
-            const double e1[3]{p1[0] - p0[0], p1[1] - p0[1], 0};
-            const double e2[3]{p2[0] - p0[0], p2[1] - p0[1], 0};
+//             const double p1[3]{
+//               (double)scalars1[tr[1]], (double)scalars2[tr[1]], 0};
+//             const double p2[3]{
+//               (double)scalars1[tr[2]], (double)scalars2[tr[2]], 0};
+//             const double e1[3]{p1[0] - p0[0], p1[1] - p0[1], 0};
+//             const double e2[3]{p2[0] - p0[0], p2[1] - p0[1], 0};
 
-            double q[3];
-            Geometry::crossProduct(d, e2, q);
-            const double a = Geometry::dotProduct(e1, q);
-            if(a > -epsilon and a < epsilon)
-              continue;
+//             double q[3];
+//             Geometry::crossProduct(d, e2, q);
+//             const double a = Geometry::dotProduct(e1, q);
+//             if(a > -epsilon and a < epsilon)
+//               continue;
 
-            const double f = 1.0 / a;
-            const double s[3]{o[0] - p0[0], o[1] - p0[1], 1};
-            const double u = f * Geometry::dotProduct(s, q);
-            if(u < 0.0)
-              continue;
+//             const double f = 1.0 / a;
+//             const double s[3]{o[0] - p0[0], o[1] - p0[1], 1};
+//             const double u = f * Geometry::dotProduct(s, q);
+//             if(u < 0.0)
+//               continue;
 
-            double r[3];
-            Geometry::crossProduct(s, e1, r);
-            const double v = f * Geometry::dotProduct(d, r);
-            if(v < 0.0 or (u + v) > 1.0)
-              continue;
+//             double r[3];
+//             Geometry::crossProduct(s, e1, r);
+//             const double v = f * Geometry::dotProduct(d, r);
+//             if(v < 0.0 or (u + v) > 1.0)
+//               continue;
 
-              // triangle/ray intersection below
-#ifdef TTK_ENABLE_OPENMP
-#ifdef _WIN32
-#pragma omp atomic
-#else
-#pragma omp atomic update
-#endif
-#endif
-            (*density_)[i][j] += (1.0 - u - v) * density;
+//               // triangle/ray intersection below
+// #ifdef TTK_ENABLE_OPENMP
+// #ifdef _WIN32
+// #pragma omp atomic
+// #else
+// #pragma omp atomic update
+// #endif
+// #endif
+//             (*density_)[i][j] += (1.0 - u - v) * density;
 
-#ifdef TTK_ENABLE_OPENMP
-#ifdef _WIN32
-#pragma omp atomic
-            (*validPointMask_)[i][j] += 1;
-#else
-#pragma omp atomic write
-            (*validPointMask_)[i][j] = 1;
-#endif
-#else
-            (*validPointMask_)[i][j] = 1;
-#endif
-            break;
-          }
-        }
-      }
-    }
+// #ifdef TTK_ENABLE_OPENMP
+// #ifdef _WIN32
+// #pragma omp atomic
+//             (*validPointMask_)[i][j] += 1;
+// #else
+// #pragma omp atomic write
+//             (*validPointMask_)[i][j] = 1;
+// #endif
+// #else
+//             (*validPointMask_)[i][j] = 1;
+// #endif
+//             break;
+//           }
+//         }
+//       }
+//     }
   }
 
   {
